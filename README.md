@@ -71,11 +71,17 @@ git clone https://github.com/carewthebeast/relais.git
 cd relais/backend
 python3.13 -m venv .venv
 source .venv/bin/activate
-pip install "fastapi[standard]"
+pip install -r requirements.txt
 fastapi dev main.py
 ```
 
 Ouvrez ensuite http://127.0.0.1:8000/docs pour essayer l'API.
+
+Pour lancer les tests automatiques, depuis le dossier `backend/` :
+
+```bash
+pytest
+```
 
 ## Données fictives
 

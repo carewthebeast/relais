@@ -29,7 +29,9 @@ Relais ne remplace pas l'ERP ou le CRM du client : il travaille à côté, reli�
 - **Tournées :** OSRM pour les routes réelles (installé en local), OR-Tools pour l'optimisation, scikit-learn pour la prédiction des temps, Open-Meteo pour la météo
 - **Plugin :** module Odoo (Python), version Community installée en local
 - **Frontend :** React (Vite) et MapLibre pour la carte — dossier `frontend/`
+- Installer les dépendances : `cd backend && source .venv/bin/activate && pip install -r requirements.txt`. Chaque nouveau paquet est ajouté à `requirements.txt` avec sa version.
 - Lancer l'API : `cd backend && source .venv/bin/activate && fastapi dev main.py` puis http://127.0.0.1:8000/docs
+- Lancer les tests : `cd backend && source .venv/bin/activate && pytest`
 
 ## Organisation du backend
 
