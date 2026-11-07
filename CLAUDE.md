@@ -51,6 +51,7 @@ Chaque partie a son propre fichier avec un `APIRouter`, que `main.py` branche. L
    - Lire un message de client (texto, courriel, transcription d'un message vocal) et en tirer des lignes de commande propres, rapprochées du catalogue : `POST /commandes/analyser`. Des règles d'abord, un vrai modèle d'IA plus tard.
    - Signaler les lignes floues. Une personne confirme ou corrige chaque commande avant tout envoi à l'entrepôt, et on garde son nom et l'historique : `POST /commandes`.
    - Règles de validation : quantité valide, produit présent au catalogue. Statuts : reçue → à vérifier → validée → envoyée à l'entrepôt.
+   - Le produit est comparé au catalogue sans tenir compte des espaces en trop, des majuscules, des accents (claviers anglais), de « oe » au lieu de « œ » ni de l'apostrophe courbe, puis enregistré sous son nom officiel. Les fautes de frappe (« Pomme MacIntosh ») ne sont jamais corrigées automatiquement.
    - Chaque commande garde sa `source` (formulaire, texte libre, ERP) et sa `reference_externe` (son numéro dans l'ERP du client).
 2. **Tournées**
    - Clients fictifs dans la région de Granby. Routes réelles avec OSRM : km et temps de conduite réels.
@@ -63,7 +64,7 @@ Chaque partie a son propre fichier avec un `APIRouter`, que `main.py` branche. L
    - Projets et parc : budget TI, projets, demandes de l'équipe, état de l'équipement et de l'infrastructure.
 5. **Intégration**
    - Connexion pour le plugin : une clé d'API (dans `.env`) pour que seul le plugin puisse envoyer des commandes, et une route pour lire le statut d'une commande. Une même `reference_externe` envoyée deux fois ne crée pas de doublon.
-   - Données de l'ERP désordonnées : on nettoie seulement ce qui est sûr (espaces, majuscules, virgule décimale), on rapproche les produits du catalogue, et en cas de doute la commande passe « à vérifier ». Jamais de correction silencieuse.
+   - Données de l'ERP désordonnées : on nettoie seulement ce qui est sûr (espaces, majuscules, accents, virgule décimale), on rapproche les produits du catalogue, et en cas de doute la commande passe « à vérifier ». Jamais de correction silencieuse.
    - Plugin Odoo : il envoie les nouvelles commandes à Relais et affiche leur statut dans Odoo.
    - Un schéma qui montre comment Relais se branche à l'ERP, au CRM et au logiciel de répartition.
 6. **Interface React** — onglets Commandes, Tournées, Procédures, Équipe, Projets et parc, Intégration. Carte interactive de la région de Granby avec MapLibre (zoom, déplacement, inclinaison 3D), un camion qui roule sur la tournée, des arrêts qui changent de couleur une fois livrés, et une bascule « tournée reçue / tournée optimisée ».
