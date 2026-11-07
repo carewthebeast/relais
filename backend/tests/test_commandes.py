@@ -6,7 +6,7 @@ api = TestClient(app)
 
 commande_valide = {
     "client": "Épicerie Test (fictif)",
-    "produit": "Pommes",
+    "produit": "Pommes McIntosh",
     "quantite": 3,
 }
 
@@ -18,9 +18,16 @@ def test_creer_commande():
 
 
 def test_refuse_quantite_zero():
-    commande = {"client": "Épicerie Test (fictif)", "produit": "Pommes", "quantite": 0}
+    commande = {"client": "Épicerie Test (fictif)", "produit": "Pommes McIntosh", "quantite": 0}
     reponse = api.post("/commandes", json=commande)
     assert reponse.status_code == 422
+
+
+def test_refuse_produit_absent_du_catalogue():
+    commande = {"client": "Épicerie Test (fictif)", "produit": "Ananas", "quantite": 2}
+    reponse = api.post("/commandes", json=commande)
+    assert reponse.status_code == 422
+    assert reponse.json()["detail"] == "Produit absent du catalogue : Ananas"
 
 
 def test_lister_commandes():

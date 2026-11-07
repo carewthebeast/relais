@@ -53,7 +53,7 @@ flowchart LR
 | Méthode | Route | Rôle |
 |---|---|---|
 | GET | `/` | Vérifie que l'API est en marche |
-| POST | `/commandes` | Crée une commande (la quantité doit être plus grande que 0) |
+| POST | `/commandes` | Crée une commande (quantité plus grande que 0, produit présent au catalogue) |
 | GET | `/commandes` | Liste les commandes |
 
 ## Pile technique
