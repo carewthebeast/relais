@@ -229,3 +229,62 @@ def test_refuse_envoi_sans_validation():
     reponse = api.post(f"/commandes/{commande['id']}/envoyer", json={"par": "Sophie (fictif)"})
     assert reponse.status_code == 409
     assert reponse.json()["detail"] == "Une commande doit être validée avant l'envoi à l'entrepôt"
+
+
+def analyser(texte: str) -> dict:
+    return api.post("/commandes/analyser", json={"texte": texte}).json()
+
+
+def test_analyser_lit_les_lignes_claires():
+    lecture = analyser("3 pommes mcintosh, 2 lait 2 %")
+    assert lecture["lignes"] == [
+        {"produit": "Pommes McIntosh", "quantite": 3},
+        {"produit": "Lait 2 %", "quantite": 2},
+    ]
+    assert lecture["a_verifier"] == []
+
+
+def test_analyser_ignore_la_politesse():
+    lecture = analyser("Bonjour! 3 pommes mcintosh svp. Merci")
+    assert lecture["lignes"] == [{"produit": "Pommes McIntosh", "quantite": 3}]
+    assert lecture["a_verifier"] == []
+
+
+def test_analyser_separe_les_lignes():
+    lecture = analyser("2 beurre salé pis 1 fromage cheddar et 4 farine tout usage\n6 sirop d'érable")
+    produits = [ligne["produit"] for ligne in lecture["lignes"]]
+    assert produits == ["Beurre salé", "Fromage cheddar", "Farine tout usage", "Sirop d'érable"]
+
+
+def test_analyser_signale_quantite_manquante():
+    lecture = analyser("lait 2 %")
+    assert lecture["lignes"] == []
+    assert lecture["a_verifier"] == [
+        {
+            "texte": "lait 2 %",
+            "quantite": None,
+            "suggestions": ["Lait 2 %"],
+            "raisons": ["Quantité manquante"],
+        }
+    ]
+
+
+def test_analyser_suggere_sans_corriger():
+    lecture = analyser("5 caisses de frites congelées")
+    assert lecture["lignes"] == []
+    a_verifier = lecture["a_verifier"][0]
+    assert a_verifier["quantite"] == 5
+    assert a_verifier["suggestions"] == ["Frites congelées"]
+    assert a_verifier["raisons"] == ["Produit pas reconnu"]
+
+
+def test_analyser_ne_corrige_pas_les_fautes():
+    lecture = analyser("2 Pomme MacIntosh")
+    assert lecture["lignes"] == []
+    assert lecture["a_verifier"][0]["suggestions"] == []
+    assert lecture["a_verifier"][0]["raisons"] == ["Produit pas reconnu"]
+
+
+def test_analyser_refuse_message_vide():
+    reponse = api.post("/commandes/analyser", json={"texte": ""})
+    assert reponse.status_code == 422

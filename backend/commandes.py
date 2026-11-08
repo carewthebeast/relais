@@ -67,7 +67,25 @@ class Validation(Action):
     lignes: list[Ligne] | None = Field(default=None, min_length=1)
 
 
+class Message(BaseModel):
+    texte: str = Field(min_length=1)
+
+
+class LigneAVerifier(BaseModel):
+    texte: str
+    quantite: int | None
+    suggestions: list[str]
+    raisons: list[str]
+
+
+class Lecture(BaseModel):
+    lignes: list[Ligne]
+    a_verifier: list[LigneAVerifier]
+
+
 commandes = []
+
+mots_ignores = {"bonjour", "salut", "allo", "merci", "svp", "stp"}
 
 
 def enlever_accents(texte: str) -> str:
@@ -115,6 +133,69 @@ def decrire(lignes: list[Ligne]) -> str:
     return ", ".join(morceaux)
 
 
+def decouper(texte: str) -> list[str]:
+    for separateur in ["\n", ";", ". ", "! ", " et ", " pis "]:
+        texte = texte.replace(separateur, ",")
+    morceaux = []
+    for morceau in texte.split(","):
+        morceau = morceau.strip()
+        if morceau:
+            morceaux.append(morceau)
+    return morceaux
+
+
+def garder_mots_utiles(morceau: str) -> list[str]:
+    mots = []
+    for mot in normaliser(morceau).split():
+        mot = mot.strip(".!?")
+        if mot and mot not in mots_ignores:
+            mots.append(mot)
+    return mots
+
+
+def lire_quantite(mots: list[str]) -> tuple[int | None, list[str]]:
+    if mots and mots[0].isdigit() and int(mots[0]) > 0:
+        return int(mots[0]), mots[1:]
+    return None, mots
+
+
+def suggerer(texte: str) -> list[str]:
+    mots = set(normaliser(texte).split())
+    if not mots:
+        return []
+    suggestions = []
+    for nom in catalogue:
+        mots_du_nom = set(normaliser(nom).split())
+        if mots <= mots_du_nom or mots_du_nom <= mots:
+            suggestions.append(nom)
+    return suggestions
+
+
+def lire_morceau(morceau: str, lecture: Lecture) -> None:
+    mots = garder_mots_utiles(morceau)
+    if not mots:
+        return
+    quantite, mots_du_produit = lire_quantite(mots)
+    texte_produit = " ".join(mots_du_produit)
+    produit = trouver_produit(texte_produit)
+    if produit is not None and quantite is not None:
+        lecture.lignes.append(Ligne(produit=produit, quantite=quantite))
+        return
+    raisons = []
+    if produit is None:
+        raisons.append("Produit pas reconnu")
+    if quantite is None:
+        raisons.append("Quantité manquante")
+    lecture.a_verifier.append(
+        LigneAVerifier(
+            texte=morceau,
+            quantite=quantite,
+            suggestions=suggerer(texte_produit),
+            raisons=raisons,
+        )
+    )
+
+
 def trouver_commande(commande_id: int) -> Commande:
     for commande in commandes:
         if commande.id == commande_id:
@@ -146,6 +227,14 @@ def creer_commande(commande: NouvelleCommande) -> Commande:
     changer_statut(nouvelle, Statut.RECUE, commande.client, f"Reçue ({commande.source})")
     commandes.append(nouvelle)
     return nouvelle
+
+
+@routeur.post("/commandes/analyser")
+def analyser_message(message: Message) -> Lecture:
+    lecture = Lecture(lignes=[], a_verifier=[])
+    for morceau in decouper(message.texte):
+        lire_morceau(morceau, lecture)
+    return lecture
 
 
 @routeur.get("/commandes")
