@@ -2,7 +2,7 @@
 
 Application d'opérations pour la distribution alimentaire. Relais relaie chaque commande du client à l'entrepôt, puis au camion, sans rien perdre en chemin. Elle donne aussi au coordonnateur TI un seul endroit pour gérer le budget, les projets et l'équipement.
 
-**Statut :** en développement. La phase 1 (Commandes) est terminée ; la phase 2 (Tournées) est la prochaine.
+**Statut :** en développement. La phase 1 (Commandes) est terminée ; la phase 2 (Tournées) est en cours.
 
 ## Le problème
 
@@ -42,7 +42,7 @@ flowchart LR
 | Phase | Contenu | Statut |
 |---|---|---|
 | 1 | Commandes : lecture des messages, validation humaine, statuts | Terminée |
-| 2 | Tournées : routes réelles, optimisation, km avant et après | Prochaine |
+| 2 | Tournées : routes réelles, optimisation, km avant et après | En cours |
 | 3 | Prédiction des temps : modèle d'apprentissage automatique et météo | À venir |
 | 4 | Procédures, Équipe, Projets et parc | À venir |
 | 5 | Intégration : plugin Odoo et schéma de branchement | À venir |
@@ -64,13 +64,21 @@ flowchart LR
 |---|---|---|
 | GET | `/` | Vérifie que l'API est en marche |
 | POST | `/commandes/analyser` | Lit le message d'un client : les lignes sûres d'un côté, les lignes à vérifier de l'autre, avec raisons et suggestions. Aucune faute n'est corrigée en silence |
-| POST | `/commandes` | Crée une commande d'une ou plusieurs lignes, rapprochées du catalogue (espaces, majuscules et accents tolérés) |
+| POST | `/commandes` | Crée une commande d'une ou plusieurs lignes pour un client de la liste, rapprochées du catalogue (espaces, majuscules et accents tolérés). Elle peut être marquée urgente |
 | GET | `/commandes` | Liste les commandes avec leur historique |
 | GET | `/commandes/{commande_id}` | Lit une commande |
 | POST | `/commandes/{commande_id}/valider` | Une personne confirme ou corrige la commande ; son nom et l'ancienne version restent dans l'historique |
 | POST | `/commandes/{commande_id}/envoyer` | Envoie à l'entrepôt une commande validée, jamais avant |
+| GET | `/catalogue` | Liste les produits et leur compartiment : congelé, réfrigéré ou sec |
+| GET | `/clients` | Liste les clients, avec leur position et leur plage de livraison |
+| GET | `/clients/{client_id}` | Lit un client |
+| GET | `/entrepot` | Donne la position de l'entrepôt |
 
-Les messages d'erreur sont en français.
+Les messages d'erreur sont en français. Les commandes sont enregistrées dans une base SQLite.
+
+### Région desservie (fictive)
+
+L'entrepôt est à Granby. Les 20 clients sont répartis dans 12 villes : Granby, Bromont, Cowansville, Waterloo, Saint-Hyacinthe, Magog, Sherbrooke, Farnham, Sutton, Saint-Césaire, Acton Vale et Lac-Brome. Les noms sont inventés et les positions sont approximatives : ce ne sont pas de vraies adresses.
 
 ### Exemple : lecture d'un message
 

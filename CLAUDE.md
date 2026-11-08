@@ -41,7 +41,10 @@ backend/
   commandes.py    routes des commandes (un fichier par partie)
   erreurs.py      messages d'erreur de validation en français
   base_de_donnees.py  ouvre la base SQLite et crée les tables
-  donnees/        données fictives : catalogue, clients, procédures
+  catalogue.py    produits et leur compartiment (congelé, réfrigéré, sec)
+  clients.py      clients fictifs et entrepôt : position et plage de livraison
+  texte.py        nettoyage du texte (espaces, majuscules, accents), partagé
+  donnees/        données fictives en JSON : catalogue, clients, entrepôt, procédures
   tests/          tests automatiques
 ```
 
@@ -57,6 +60,7 @@ Chaque partie a son propre fichier avec un `APIRouter`, que `main.py` branche. L
    - Chaque commande garde sa `source` (formulaire, texte libre, ERP) et sa `reference_externe` (son numéro dans l'ERP du client).
 2. **Tournées**
    - Entrepôt fictif à Granby. Clients fictifs à Granby et dans les villes autour (Bromont, Cowansville, Waterloo, Saint-Hyacinthe, Magog, Sherbrooke, etc.). Routes réelles avec OSRM : km et temps de conduite réels.
+   - Chaque client a une position et une plage de livraison, chaque produit un compartiment. Une commande ne peut viser qu'un client de la liste, et elle peut être marquée urgente.
    - Optimisation avec OR-Tools : le meilleur ordre des arrêts, en respectant les compartiments congelé, réfrigéré et sec, les livraisons urgentes et les plages horaires.
    - Km et temps avant et après l'optimisation, puis l'ordre de chargement envoyé à l'entrepôt.
 3. **Prédiction des temps** — un modèle de gradient boosting ajuste les temps selon la météo (Open-Meteo), l'heure et le chargement. Exemple : « Neige demain : +18 min ».
