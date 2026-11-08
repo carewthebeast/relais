@@ -2,7 +2,7 @@
 
 Application d'opérations pour la distribution alimentaire. Relais relaie chaque commande du client à l'entrepôt, puis au camion, sans rien perdre en chemin. Elle donne aussi au coordonnateur TI un seul endroit pour gérer le budget, les projets et l'équipement.
 
-**Statut :** en développement. La phase 1 (Commandes) est en cours.
+**Statut :** en développement. La phase 1 (Commandes) est terminée ; la phase 2 (Tournées) est la prochaine.
 
 ## Le problème
 
@@ -41,8 +41,8 @@ flowchart LR
 
 | Phase | Contenu | Statut |
 |---|---|---|
-| 1 | Commandes : lecture des messages, validation humaine, statuts | En cours |
-| 2 | Tournées : routes réelles, optimisation, km avant et après | À venir |
+| 1 | Commandes : lecture des messages, validation humaine, statuts | Terminée |
+| 2 | Tournées : routes réelles, optimisation, km avant et après | Prochaine |
 | 3 | Prédiction des temps : modèle d'apprentissage automatique et météo | À venir |
 | 4 | Procédures, Équipe, Projets et parc | À venir |
 | 5 | Intégration : plugin Odoo et schéma de branchement | À venir |
@@ -50,11 +50,40 @@ flowchart LR
 
 ## Ce qui fonctionne aujourd'hui
 
+Le parcours d'une commande, du message du client jusqu'à l'entrepôt :
+
+```mermaid
+flowchart LR
+    msg["Message du client"] -->|"analyser"| lec["Lignes sûres<br/>+ lignes à vérifier"]
+    lec -->|"une personne corrige et crée"| recue["reçue"]
+    recue -->|"valider"| validee["validée"]
+    validee -->|"envoyer"| ent["envoyée à l'entrepôt"]
+```
+
 | Méthode | Route | Rôle |
 |---|---|---|
 | GET | `/` | Vérifie que l'API est en marche |
-| POST | `/commandes` | Crée une commande (quantité plus grande que 0, produit présent au catalogue) |
-| GET | `/commandes` | Liste les commandes |
+| POST | `/commandes/analyser` | Lit le message d'un client : les lignes sûres d'un côté, les lignes à vérifier de l'autre, avec raisons et suggestions. Aucune faute n'est corrigée en silence |
+| POST | `/commandes` | Crée une commande d'une ou plusieurs lignes, rapprochées du catalogue (espaces, majuscules et accents tolérés) |
+| GET | `/commandes` | Liste les commandes avec leur historique |
+| GET | `/commandes/{commande_id}` | Lit une commande |
+| POST | `/commandes/{commande_id}/valider` | Une personne confirme ou corrige la commande ; son nom et l'ancienne version restent dans l'historique |
+| POST | `/commandes/{commande_id}/envoyer` | Envoie à l'entrepôt une commande validée, jamais avant |
+
+Les messages d'erreur sont en français.
+
+### Exemple : lecture d'un message
+
+> Bonjour! 3 pommes mcintosh, 2 lait 2 % pis du beurre salé. 5 caisses de frites congelées. Merci
+
+| Texte | Résultat |
+|---|---|
+| 3 pommes mcintosh | Sûr : 3 × Pommes McIntosh |
+| 2 lait 2 % | Sûr : 2 × Lait 2 % |
+| du beurre salé | À vérifier : produit pas reconnu, quantité manquante. Suggestion : Beurre salé |
+| 5 caisses de frites congelées | À vérifier : produit pas reconnu. Suggestion : Frites congelées |
+
+La lecture se fait par règles pour l'instant. Un modèle d'IA pourra la remplacer plus tard, sans retirer la vérification humaine.
 
 ## Pile technique
 

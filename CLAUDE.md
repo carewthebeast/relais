@@ -39,6 +39,7 @@ Relais ne remplace pas l'ERP ou le CRM du client : il travaille à côté, reli�
 backend/
   main.py         crée l'application et branche les routeurs
   commandes.py    routes des commandes (un fichier par partie)
+  erreurs.py      messages d'erreur de validation en français
   donnees/        données fictives : catalogue, clients, procédures
   tests/          tests automatiques
 ```
