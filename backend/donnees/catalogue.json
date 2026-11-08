@@ -1,0 +1,12 @@
+[
+  {"nom": "Pommes McIntosh", "compartiment": "refrigere"},
+  {"nom": "Lait 2 %", "compartiment": "refrigere"},
+  {"nom": "Beurre salé", "compartiment": "refrigere"},
+  {"nom": "Fromage cheddar", "compartiment": "refrigere"},
+  {"nom": "Pain blanc tranché", "compartiment": "sec"},
+  {"nom": "Farine tout usage", "compartiment": "sec"},
+  {"nom": "Sirop d'érable", "compartiment": "sec"},
+  {"nom": "Poulet entier congelé", "compartiment": "congele"},
+  {"nom": "Frites congelées", "compartiment": "congele"},
+  {"nom": "Œufs gros calibre", "compartiment": "refrigere"}
+]

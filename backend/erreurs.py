@@ -13,6 +13,8 @@ messages = {
     "int_from_float": "Doit être un nombre entier, sans décimales",
     "int_type": "Doit être un nombre entier",
     "string_type": "Doit être du texte",
+    "bool_parsing": "Doit être true (oui) ou false (non)",
+    "bool_type": "Doit être true (oui) ou false (non)",
     "list_type": "Doit être une liste",
     "model_attributes_type": "Doit être un objet JSON",
     "json_invalid": "JSON mal formé : il manque peut-être une virgule, un guillemet ou une accolade",

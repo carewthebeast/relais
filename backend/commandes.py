@@ -1,5 +1,4 @@
 import sqlite3
-import unicodedata
 from datetime import datetime
 from enum import StrEnum
 
@@ -7,21 +6,11 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from base_de_donnees import ouvrir
+from catalogue import suggerer, trouver_produit
+from clients import trouver_client
+from texte import normaliser
 
 routeur = APIRouter(tags=["Commandes"])
-
-catalogue = [
-    "Pommes McIntosh",
-    "Lait 2 %",
-    "Beurre salé",
-    "Fromage cheddar",
-    "Pain blanc tranché",
-    "Farine tout usage",
-    "Sirop d'érable",
-    "Poulet entier congelé",
-    "Frites congelées",
-    "Œufs gros calibre",
-]
 
 
 class Statut(StrEnum):
@@ -45,6 +34,7 @@ class Ligne(BaseModel):
 class NouvelleCommande(BaseModel):
     client: str
     lignes: list[Ligne] = Field(min_length=1)
+    urgente: bool = False
     source: Source = Source.FORMULAIRE
     reference_externe: str | None = None
 
@@ -89,36 +79,22 @@ class Lecture(BaseModel):
 mots_ignores = {"bonjour", "salut", "allo", "merci", "svp", "stp"}
 
 
-def enlever_accents(texte: str) -> str:
-    resultat = ""
-    for lettre in unicodedata.normalize("NFD", texte):
-        if not unicodedata.combining(lettre):
-            resultat += lettre
-    return resultat
-
-
-def normaliser(texte: str) -> str:
-    texte = " ".join(texte.split()).lower()
-    texte = texte.replace("œ", "oe").replace("’", "'")
-    return enlever_accents(texte)
-
-
-def trouver_produit(produit: str) -> str | None:
-    for nom in catalogue:
-        if normaliser(nom) == normaliser(produit):
-            return nom
-    return None
+def rapprocher_client(nom: str) -> str:
+    client = trouver_client(nom)
+    if client is None:
+        raise HTTPException(status_code=422, detail=f"Client inconnu : {nom}")
+    return client.nom
 
 
 def rapprocher_lignes(lignes: list[Ligne]) -> list[Ligne]:
     propres = []
     absents = []
     for ligne in lignes:
-        nom_officiel = trouver_produit(ligne.produit)
-        if nom_officiel is None:
+        produit = trouver_produit(ligne.produit)
+        if produit is None:
             absents.append(ligne.produit)
         else:
-            propres.append(Ligne(produit=nom_officiel, quantite=ligne.quantite))
+            propres.append(Ligne(produit=produit.nom, quantite=ligne.quantite))
     if absents:
         raise HTTPException(
             status_code=422,
@@ -160,18 +136,6 @@ def lire_quantite(mots: list[str]) -> tuple[int | None, list[str]]:
     return None, mots
 
 
-def suggerer(texte: str) -> list[str]:
-    mots = set(normaliser(texte).split())
-    if not mots:
-        return []
-    suggestions = []
-    for nom in catalogue:
-        mots_du_nom = set(normaliser(nom).split())
-        if mots <= mots_du_nom or mots_du_nom <= mots:
-            suggestions.append(nom)
-    return suggestions
-
-
 def lire_morceau(morceau: str, lecture: Lecture) -> None:
     mots = garder_mots_utiles(morceau)
     if not mots:
@@ -180,7 +144,7 @@ def lire_morceau(morceau: str, lecture: Lecture) -> None:
     texte_produit = " ".join(mots_du_produit)
     produit = trouver_produit(texte_produit)
     if produit is not None and quantite is not None:
-        lecture.lignes.append(Ligne(produit=produit, quantite=quantite))
+        lecture.lignes.append(Ligne(produit=produit.nom, quantite=quantite))
         return
     raisons = []
     if produit is None:
@@ -230,6 +194,7 @@ def charger_commande(connexion: sqlite3.Connection, rangee: sqlite3.Row) -> Comm
     return Commande(
         id=rangee["id"],
         client=rangee["client"],
+        urgente=rangee["urgente"],
         source=rangee["source"],
         reference_externe=rangee["reference_externe"],
         statut=rangee["statut"],
@@ -253,15 +218,16 @@ def trouver_commande(connexion: sqlite3.Connection, commande_id: int) -> Command
 
 @routeur.post("/commandes")
 def creer_commande(commande: NouvelleCommande) -> Commande:
+    client = rapprocher_client(commande.client)
     lignes = rapprocher_lignes(commande.lignes)
     with ouvrir() as connexion:
         curseur = connexion.execute(
-            "INSERT INTO commandes (client, source, reference_externe, statut) VALUES (?, ?, ?, ?)",
-            (commande.client, commande.source, commande.reference_externe, Statut.RECUE),
+            "INSERT INTO commandes (client, urgente, source, reference_externe, statut) VALUES (?, ?, ?, ?, ?)",
+            (client, commande.urgente, commande.source, commande.reference_externe, Statut.RECUE),
         )
         commande_id = curseur.lastrowid
         enregistrer_lignes(connexion, commande_id, lignes)
-        changer_statut(connexion, commande_id, Statut.RECUE, commande.client, f"Reçue ({commande.source})")
+        changer_statut(connexion, commande_id, Statut.RECUE, client, f"Reçue ({commande.source})")
         return trouver_commande(connexion, commande_id)
 
 

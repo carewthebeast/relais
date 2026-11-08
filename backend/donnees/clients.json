@@ -1,0 +1,22 @@
+[
+  {"id": 1, "nom": "Épicerie Beausoleil (fictif)", "ville": "Granby", "latitude": 45.4058, "longitude": -72.7212, "livraison_debut": "07:00", "livraison_fin": "12:00"},
+  {"id": 2, "nom": "Restaurant Le Tournesol (fictif)", "ville": "Granby", "latitude": 45.3998, "longitude": -72.7335, "livraison_debut": "08:00", "livraison_fin": "10:30"},
+  {"id": 3, "nom": "École primaire des Érables (fictif)", "ville": "Granby", "latitude": 45.3912, "longitude": -72.7180, "livraison_debut": "07:00", "livraison_fin": "09:30"},
+  {"id": 4, "nom": "Café-bistro La Halte (fictif)", "ville": "Granby", "latitude": 45.4110, "longitude": -72.7440, "livraison_debut": "13:00", "livraison_fin": "16:00"},
+  {"id": 5, "nom": "Auberge des Collines (fictif)", "ville": "Bromont", "latitude": 45.3080, "longitude": -72.6420, "livraison_debut": "08:00", "livraison_fin": "11:00"},
+  {"id": 6, "nom": "Casse-croûte du Mont (fictif)", "ville": "Bromont", "latitude": 45.3190, "longitude": -72.6530, "livraison_debut": "10:00", "livraison_fin": "14:00"},
+  {"id": 7, "nom": "Marché Lafleur (fictif)", "ville": "Cowansville", "latitude": 45.2030, "longitude": -72.7470, "livraison_debut": "07:00", "livraison_fin": "12:00"},
+  {"id": 8, "nom": "Résidence Les Tilleuls (fictif)", "ville": "Cowansville", "latitude": 45.1975, "longitude": -72.7560, "livraison_debut": "06:30", "livraison_fin": "10:00"},
+  {"id": 9, "nom": "Boulangerie du Lac (fictif)", "ville": "Waterloo", "latitude": 45.3480, "longitude": -72.5190, "livraison_debut": "06:00", "livraison_fin": "09:00"},
+  {"id": 10, "nom": "Cafétéria Collège Horizon (fictif)", "ville": "Saint-Hyacinthe", "latitude": 45.6300, "longitude": -72.9500, "livraison_debut": "09:00", "livraison_fin": "13:00"},
+  {"id": 11, "nom": "Restaurant La Cour (fictif)", "ville": "Saint-Hyacinthe", "latitude": 45.6240, "longitude": -72.9600, "livraison_debut": "10:00", "livraison_fin": "15:00"},
+  {"id": 12, "nom": "Bistro du Quai (fictif)", "ville": "Magog", "latitude": 45.2650, "longitude": -72.1450, "livraison_debut": "09:00", "livraison_fin": "12:00"},
+  {"id": 13, "nom": "Épicerie fine Le Panier (fictif)", "ville": "Magog", "latitude": 45.2700, "longitude": -72.1400, "livraison_debut": "08:00", "livraison_fin": "14:00"},
+  {"id": 14, "nom": "Restaurant Le Carrefour (fictif)", "ville": "Sherbrooke", "latitude": 45.4030, "longitude": -71.8920, "livraison_debut": "10:00", "livraison_fin": "15:00"},
+  {"id": 15, "nom": "CPE Les Pommiers (fictif)", "ville": "Sherbrooke", "latitude": 45.3900, "longitude": -71.9200, "livraison_debut": "08:00", "livraison_fin": "11:00"},
+  {"id": 16, "nom": "Dépanneur du Boulevard (fictif)", "ville": "Farnham", "latitude": 45.2850, "longitude": -72.9800, "livraison_debut": "08:00", "livraison_fin": "17:00"},
+  {"id": 17, "nom": "Cantine des Pistes (fictif)", "ville": "Sutton", "latitude": 45.1050, "longitude": -72.6150, "livraison_debut": "09:00", "livraison_fin": "13:00"},
+  {"id": 18, "nom": "Marché Champêtre (fictif)", "ville": "Saint-Césaire", "latitude": 45.4130, "longitude": -72.9980, "livraison_debut": "07:00", "livraison_fin": "12:00"},
+  {"id": 19, "nom": "Restaurant L'Étape (fictif)", "ville": "Acton Vale", "latitude": 45.6490, "longitude": -72.5650, "livraison_debut": "10:00", "livraison_fin": "14:00"},
+  {"id": 20, "nom": "Café des Artisans (fictif)", "ville": "Lac-Brome", "latitude": 45.2170, "longitude": -72.5140, "livraison_debut": "08:00", "livraison_fin": "12:00"}
+]

@@ -7,7 +7,7 @@ api = TestClient(app)
 
 def commande_de(produit: str, quantite: int = 1) -> dict:
     return {
-        "client": "Épicerie Test (fictif)",
+        "client": "Épicerie Beausoleil (fictif)",
         "lignes": [{"produit": produit, "quantite": quantite}],
     }
 
@@ -16,13 +16,13 @@ def test_creer_commande():
     reponse = api.post("/commandes", json=commande_de("Pommes McIntosh", 3))
     assert reponse.status_code == 200
     resultat = reponse.json()
-    assert resultat["client"] == "Épicerie Test (fictif)"
+    assert resultat["client"] == "Épicerie Beausoleil (fictif)"
     assert resultat["lignes"] == [{"produit": "Pommes McIntosh", "quantite": 3}]
 
 
 def test_commande_avec_plusieurs_lignes():
     commande = {
-        "client": "Épicerie Test (fictif)",
+        "client": "Épicerie Beausoleil (fictif)",
         "lignes": [
             {"produit": "lait 2 %", "quantite": 2},
             {"produit": "frites congelees", "quantite": 5},
@@ -36,7 +36,7 @@ def test_commande_avec_plusieurs_lignes():
 
 
 def test_refuse_commande_sans_ligne():
-    commande = {"client": "Épicerie Test (fictif)", "lignes": []}
+    commande = {"client": "Épicerie Beausoleil (fictif)", "lignes": []}
     reponse = api.post("/commandes", json=commande)
     assert reponse.status_code == 422
 
@@ -94,7 +94,7 @@ def test_refuse_produit_absent_du_catalogue():
 
 def test_nomme_tous_les_produits_absents():
     commande = {
-        "client": "Épicerie Test (fictif)",
+        "client": "Épicerie Beausoleil (fictif)",
         "lignes": [
             {"produit": "Ananas", "quantite": 1},
             {"produit": "Pommes McIntosh", "quantite": 2},
@@ -135,6 +135,35 @@ def test_refuse_faute_de_frappe():
     assert reponse.status_code == 422
 
 
+def test_client_rapproche_de_la_liste():
+    commande = commande_de("Pommes McIntosh")
+    commande["client"] = "  epicerie BEAUSOLEIL (fictif) "
+    reponse = api.post("/commandes", json=commande)
+    assert reponse.status_code == 200
+    assert reponse.json()["client"] == "Épicerie Beausoleil (fictif)"
+
+
+def test_refuse_client_inconnu():
+    commande = commande_de("Pommes McIntosh")
+    commande["client"] = "Épicerie Inconnue"
+    reponse = api.post("/commandes", json=commande)
+    assert reponse.status_code == 422
+    assert reponse.json()["detail"] == "Client inconnu : Épicerie Inconnue"
+
+
+def test_commande_pas_urgente_par_defaut():
+    resultat = api.post("/commandes", json=commande_de("Pommes McIntosh")).json()
+    assert resultat["urgente"] is False
+
+
+def test_commande_urgente_est_gardee():
+    commande = commande_de("Frites congelées", 5)
+    commande["urgente"] = True
+    creee = api.post("/commandes", json=commande).json()
+    relue = api.get(f"/commandes/{creee['id']}").json()
+    assert relue["urgente"] is True
+
+
 def test_lister_commandes():
     creee = api.post("/commandes", json=commande_de("Pommes McIntosh")).json()
     reponse = api.get("/commandes")
@@ -151,7 +180,7 @@ def test_historique_commence_a_la_reception():
     assert len(commande["historique"]) == 1
     premier = commande["historique"][0]
     assert premier["statut"] == "recue"
-    assert premier["par"] == "Épicerie Test (fictif)"
+    assert premier["par"] == "Épicerie Beausoleil (fictif)"
     assert premier["detail"] == "Reçue (formulaire)"
 
 

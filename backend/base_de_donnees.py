@@ -8,6 +8,7 @@ tables = """
 CREATE TABLE IF NOT EXISTS commandes (
     id INTEGER PRIMARY KEY,
     client TEXT NOT NULL,
+    urgente INTEGER NOT NULL CHECK (urgente IN (0, 1)),
     source TEXT NOT NULL,
     reference_externe TEXT,
     statut TEXT NOT NULL

@@ -6,7 +6,7 @@ from main import app
 api = TestClient(app)
 
 commande = {
-    "client": "Épicerie Test (fictif)",
+    "client": "Épicerie Beausoleil (fictif)",
     "lignes": [
         {"produit": "Pommes McIntosh", "quantite": 3},
         {"produit": "Lait 2 %", "quantite": 2},
@@ -23,7 +23,7 @@ def test_commande_enregistree_dans_la_base():
         lignes = connexion.execute(
             "SELECT produit, quantite FROM lignes WHERE commande_id = ?", (creee["id"],)
         ).fetchall()
-    assert rangee["client"] == "Épicerie Test (fictif)"
+    assert rangee["client"] == "Épicerie Beausoleil (fictif)"
     assert rangee["statut"] == "recue"
     assert [tuple(ligne) for ligne in lignes] == [("Pommes McIntosh", 3), ("Lait 2 %", 2)]
 
@@ -40,7 +40,7 @@ def test_validation_enregistree_dans_la_base():
         ).fetchall()
     assert statut == "validee"
     assert [tuple(evenement) for evenement in evenements] == [
-        ("recue", "Épicerie Test (fictif)"),
+        ("recue", "Épicerie Beausoleil (fictif)"),
         ("validee", "Sophie (fictif)"),
     ]
 
@@ -49,3 +49,14 @@ def test_les_numeros_viennent_de_la_base():
     premiere = api.post("/commandes", json=commande).json()
     deuxieme = api.post("/commandes", json=commande).json()
     assert deuxieme["id"] == premiere["id"] + 1
+
+
+def test_urgente_enregistree_comme_0_ou_1():
+    normale = api.post("/commandes", json=commande).json()
+    urgente = api.post("/commandes", json={**commande, "urgente": True}).json()
+    with ouvrir() as connexion:
+        rangees = connexion.execute(
+            "SELECT id, urgente FROM commandes WHERE id IN (?, ?) ORDER BY id",
+            (normale["id"], urgente["id"]),
+        ).fetchall()
+    assert [tuple(rangee) for rangee in rangees] == [(normale["id"], 0), (urgente["id"], 1)]
