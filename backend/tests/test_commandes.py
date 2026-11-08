@@ -140,3 +140,92 @@ def test_lister_commandes():
     reponse = api.get("/commandes")
     assert reponse.status_code == 200
     assert creee in reponse.json()
+
+
+def creer(produit: str = "Pommes McIntosh", quantite: int = 3) -> dict:
+    return api.post("/commandes", json=commande_de(produit, quantite)).json()
+
+
+def test_historique_commence_a_la_reception():
+    commande = creer()
+    assert len(commande["historique"]) == 1
+    premier = commande["historique"][0]
+    assert premier["statut"] == "recue"
+    assert premier["par"] == "Épicerie Test (fictif)"
+    assert premier["detail"] == "Reçue (formulaire)"
+
+
+def test_lire_une_commande():
+    commande = creer()
+    reponse = api.get(f"/commandes/{commande['id']}")
+    assert reponse.status_code == 200
+    assert reponse.json() == commande
+
+
+def test_commande_introuvable():
+    reponse = api.get("/commandes/9999")
+    assert reponse.status_code == 404
+    assert reponse.json()["detail"] == "Commande introuvable : 9999"
+
+
+def test_valider_une_commande():
+    commande = creer()
+    reponse = api.post(f"/commandes/{commande['id']}/valider", json={"par": "Sophie (fictif)"})
+    assert reponse.status_code == 200
+    resultat = reponse.json()
+    assert resultat["statut"] == "validee"
+    dernier = resultat["historique"][-1]
+    assert dernier["statut"] == "validee"
+    assert dernier["par"] == "Sophie (fictif)"
+    assert dernier["detail"] == "Validée telle quelle"
+
+
+def test_valider_avec_corrections():
+    commande = creer("Pommes McIntosh", 3)
+    correction = {"par": "Sophie (fictif)", "lignes": [{"produit": "pommes mcintosh", "quantite": 5}]}
+    resultat = api.post(f"/commandes/{commande['id']}/valider", json=correction).json()
+    assert resultat["lignes"] == [{"produit": "Pommes McIntosh", "quantite": 5}]
+    assert resultat["historique"][-1]["detail"] == "Corrigée et validée. Avant : 3 Pommes McIntosh"
+
+
+def test_correction_avec_produit_absent_ne_valide_pas():
+    commande = creer()
+    correction = {"par": "Sophie (fictif)", "lignes": [{"produit": "Ananas", "quantite": 1}]}
+    reponse = api.post(f"/commandes/{commande['id']}/valider", json=correction)
+    assert reponse.status_code == 422
+    toujours = api.get(f"/commandes/{commande['id']}").json()
+    assert toujours["statut"] == "recue"
+    assert toujours["lignes"] == commande["lignes"]
+
+
+def test_valider_exige_un_nom():
+    commande = creer()
+    sans_nom = api.post(f"/commandes/{commande['id']}/valider", json={})
+    nom_vide = api.post(f"/commandes/{commande['id']}/valider", json={"par": ""})
+    assert sans_nom.status_code == 422
+    assert nom_vide.status_code == 422
+
+
+def test_refuse_double_validation():
+    commande = creer()
+    api.post(f"/commandes/{commande['id']}/valider", json={"par": "Sophie (fictif)"})
+    reponse = api.post(f"/commandes/{commande['id']}/valider", json={"par": "Marc (fictif)"})
+    assert reponse.status_code == 409
+
+
+def test_envoyer_une_commande_validee():
+    commande = creer()
+    api.post(f"/commandes/{commande['id']}/valider", json={"par": "Sophie (fictif)"})
+    reponse = api.post(f"/commandes/{commande['id']}/envoyer", json={"par": "Sophie (fictif)"})
+    assert reponse.status_code == 200
+    resultat = reponse.json()
+    assert resultat["statut"] == "envoyee_entrepot"
+    statuts = [evenement["statut"] for evenement in resultat["historique"]]
+    assert statuts == ["recue", "validee", "envoyee_entrepot"]
+
+
+def test_refuse_envoi_sans_validation():
+    commande = creer()
+    reponse = api.post(f"/commandes/{commande['id']}/envoyer", json={"par": "Sophie (fictif)"})
+    assert reponse.status_code == 409
+    assert reponse.json()["detail"] == "Une commande doit être validée avant l'envoi à l'entrepôt"

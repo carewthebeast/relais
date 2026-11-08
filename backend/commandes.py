@@ -1,4 +1,5 @@
 import unicodedata
+from datetime import datetime
 from enum import StrEnum
 
 from fastapi import APIRouter, HTTPException
@@ -45,9 +46,25 @@ class NouvelleCommande(BaseModel):
     reference_externe: str | None = None
 
 
+class Evenement(BaseModel):
+    statut: Statut
+    par: str
+    date: datetime
+    detail: str
+
+
 class Commande(NouvelleCommande):
     id: int
     statut: Statut
+    historique: list[Evenement]
+
+
+class Action(BaseModel):
+    par: str = Field(min_length=1)
+
+
+class Validation(Action):
+    lignes: list[Ligne] | None = Field(default=None, min_length=1)
 
 
 commandes = []
@@ -91,6 +108,30 @@ def rapprocher_lignes(lignes: list[Ligne]) -> list[Ligne]:
     return propres
 
 
+def decrire(lignes: list[Ligne]) -> str:
+    morceaux = []
+    for ligne in lignes:
+        morceaux.append(f"{ligne.quantite} {ligne.produit}")
+    return ", ".join(morceaux)
+
+
+def trouver_commande(commande_id: int) -> Commande:
+    for commande in commandes:
+        if commande.id == commande_id:
+            return commande
+    raise HTTPException(
+        status_code=404,
+        detail=f"Commande introuvable : {commande_id}",
+    )
+
+
+def changer_statut(commande: Commande, statut: Statut, par: str, detail: str) -> None:
+    commande.statut = statut
+    commande.historique.append(
+        Evenement(statut=statut, par=par, date=datetime.now().astimezone(), detail=detail)
+    )
+
+
 @routeur.post("/commandes")
 def creer_commande(commande: NouvelleCommande) -> Commande:
     nouvelle = Commande(
@@ -100,7 +141,9 @@ def creer_commande(commande: NouvelleCommande) -> Commande:
         source=commande.source,
         reference_externe=commande.reference_externe,
         statut=Statut.RECUE,
+        historique=[],
     )
+    changer_statut(nouvelle, Statut.RECUE, commande.client, f"Reçue ({commande.source})")
     commandes.append(nouvelle)
     return nouvelle
 
@@ -108,3 +151,39 @@ def creer_commande(commande: NouvelleCommande) -> Commande:
 @routeur.get("/commandes")
 def lister_commandes() -> list[Commande]:
     return commandes
+
+
+@routeur.get("/commandes/{commande_id}")
+def lire_commande(commande_id: int) -> Commande:
+    return trouver_commande(commande_id)
+
+
+@routeur.post("/commandes/{commande_id}/valider")
+def valider_commande(commande_id: int, validation: Validation) -> Commande:
+    commande = trouver_commande(commande_id)
+    if commande.statut not in (Statut.RECUE, Statut.A_VERIFIER):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Impossible de valider : la commande est déjà « {commande.statut} »",
+        )
+    if validation.lignes is None:
+        changer_statut(commande, Statut.VALIDEE, validation.par, "Validée telle quelle")
+    else:
+        avant = decrire(commande.lignes)
+        commande.lignes = rapprocher_lignes(validation.lignes)
+        changer_statut(
+            commande, Statut.VALIDEE, validation.par, f"Corrigée et validée. Avant : {avant}"
+        )
+    return commande
+
+
+@routeur.post("/commandes/{commande_id}/envoyer")
+def envoyer_a_l_entrepot(commande_id: int, action: Action) -> Commande:
+    commande = trouver_commande(commande_id)
+    if commande.statut != Statut.VALIDEE:
+        raise HTTPException(
+            status_code=409,
+            detail="Une commande doit être validée avant l'envoi à l'entrepôt",
+        )
+    changer_statut(commande, Statut.ENVOYEE_ENTREPOT, action.par, "Envoyée à l'entrepôt")
+    return commande

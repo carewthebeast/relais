@@ -49,7 +49,7 @@ Chaque partie a son propre fichier avec un `APIRouter`, que `main.py` branche. L
 
 1. **Commandes**
    - Lire un message de client (texto, courriel, transcription d'un message vocal) et en tirer des lignes de commande propres, rapprochées du catalogue : `POST /commandes/analyser`. Des règles d'abord, un vrai modèle d'IA plus tard.
-   - Signaler les lignes floues. Une personne confirme ou corrige chaque commande avant tout envoi à l'entrepôt, et on garde son nom et l'historique : `POST /commandes`.
+   - Signaler les lignes floues. Une personne confirme ou corrige chaque commande avant tout envoi à l'entrepôt, et on garde son nom et l'historique : `POST /commandes` crée la commande, `POST /commandes/{id}/valider` la confirme ou la corrige, `POST /commandes/{id}/envoyer` l'envoie à l'entrepôt.
    - Règles de validation : quantité valide, produit présent au catalogue. Statuts : reçue → à vérifier → validée → envoyée à l'entrepôt.
    - Le produit est comparé au catalogue sans tenir compte des espaces en trop, des majuscules, des accents (claviers anglais), de « oe » au lieu de « œ » ni de l'apostrophe courbe, puis enregistré sous son nom officiel. Les fautes de frappe (« Pomme MacIntosh ») ne sont jamais corrigées automatiquement.
    - Chaque commande garde sa `source` (formulaire, texte libre, ERP) et sa `reference_externe` (son numéro dans l'ERP du client).
