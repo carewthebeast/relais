@@ -25,7 +25,7 @@ Relais ne remplace pas l'ERP ou le CRM du client : il travaille à côté, reli�
 
 - **Backend :** Python 3.13, FastAPI, Pydantic — dossier `backend/`, point d'entrée `backend/main.py`, environnement virtuel `backend/.venv`
 - **Tests :** pytest — dossier `backend/tests/`
-- **Données :** en mémoire pour commencer, puis SQLite
+- **Données :** SQLite, dans le fichier `backend/relais.db` (jamais commité). Les tests utilisent une base temporaire.
 - **Tournées :** OSRM pour les routes réelles (installé en local), OR-Tools pour l'optimisation, scikit-learn pour la prédiction des temps, Open-Meteo pour la météo
 - **Plugin :** module Odoo (Python), version Community installée en local
 - **Frontend :** React (Vite) et MapLibre pour la carte — dossier `frontend/`
@@ -40,6 +40,7 @@ backend/
   main.py         crée l'application et branche les routeurs
   commandes.py    routes des commandes (un fichier par partie)
   erreurs.py      messages d'erreur de validation en français
+  base_de_donnees.py  ouvre la base SQLite et crée les tables
   donnees/        données fictives : catalogue, clients, procédures
   tests/          tests automatiques
 ```
@@ -55,7 +56,7 @@ Chaque partie a son propre fichier avec un `APIRouter`, que `main.py` branche. L
    - Le produit est comparé au catalogue sans tenir compte des espaces en trop, des majuscules, des accents (claviers anglais), de « oe » au lieu de « œ » ni de l'apostrophe courbe, puis enregistré sous son nom officiel. Les fautes de frappe (« Pomme MacIntosh ») ne sont jamais corrigées automatiquement.
    - Chaque commande garde sa `source` (formulaire, texte libre, ERP) et sa `reference_externe` (son numéro dans l'ERP du client).
 2. **Tournées**
-   - Clients fictifs dans la région de Granby. Routes réelles avec OSRM : km et temps de conduite réels.
+   - Entrepôt fictif à Granby. Clients fictifs à Granby et dans les villes autour (Bromont, Cowansville, Waterloo, Saint-Hyacinthe, Magog, Sherbrooke, etc.). Routes réelles avec OSRM : km et temps de conduite réels.
    - Optimisation avec OR-Tools : le meilleur ordre des arrêts, en respectant les compartiments congelé, réfrigéré et sec, les livraisons urgentes et les plages horaires.
    - Km et temps avant et après l'optimisation, puis l'ordre de chargement envoyé à l'entrepôt.
 3. **Prédiction des temps** — un modèle de gradient boosting ajuste les temps selon la météo (Open-Meteo), l'heure et le chargement. Exemple : « Neige demain : +18 min ».

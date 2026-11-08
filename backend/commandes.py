@@ -1,9 +1,12 @@
+import sqlite3
 import unicodedata
 from datetime import datetime
 from enum import StrEnum
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+
+from base_de_donnees import ouvrir
 
 routeur = APIRouter(tags=["Commandes"])
 
@@ -82,8 +85,6 @@ class Lecture(BaseModel):
     lignes: list[Ligne]
     a_verifier: list[LigneAVerifier]
 
-
-commandes = []
 
 mots_ignores = {"bonjour", "salut", "allo", "merci", "svp", "stp"}
 
@@ -196,37 +197,72 @@ def lire_morceau(morceau: str, lecture: Lecture) -> None:
     )
 
 
-def trouver_commande(commande_id: int) -> Commande:
-    for commande in commandes:
-        if commande.id == commande_id:
-            return commande
-    raise HTTPException(
-        status_code=404,
-        detail=f"Commande introuvable : {commande_id}",
+def enregistrer_lignes(connexion: sqlite3.Connection, commande_id: int, lignes: list[Ligne]) -> None:
+    for ligne in lignes:
+        connexion.execute(
+            "INSERT INTO lignes (commande_id, produit, quantite) VALUES (?, ?, ?)",
+            (commande_id, ligne.produit, ligne.quantite),
+        )
+
+
+def changer_statut(
+    connexion: sqlite3.Connection, commande_id: int, statut: Statut, par: str, detail: str
+) -> None:
+    connexion.execute(
+        "UPDATE commandes SET statut = ? WHERE id = ?",
+        (statut, commande_id),
+    )
+    connexion.execute(
+        "INSERT INTO evenements (commande_id, statut, par, date, detail) VALUES (?, ?, ?, ?, ?)",
+        (commande_id, statut, par, datetime.now().astimezone().isoformat(), detail),
     )
 
 
-def changer_statut(commande: Commande, statut: Statut, par: str, detail: str) -> None:
-    commande.statut = statut
-    commande.historique.append(
-        Evenement(statut=statut, par=par, date=datetime.now().astimezone(), detail=detail)
+def charger_commande(connexion: sqlite3.Connection, rangee: sqlite3.Row) -> Commande:
+    lignes = connexion.execute(
+        "SELECT produit, quantite FROM lignes WHERE commande_id = ? ORDER BY id",
+        (rangee["id"],),
+    ).fetchall()
+    evenements = connexion.execute(
+        "SELECT statut, par, date, detail FROM evenements WHERE commande_id = ? ORDER BY id",
+        (rangee["id"],),
+    ).fetchall()
+    return Commande(
+        id=rangee["id"],
+        client=rangee["client"],
+        source=rangee["source"],
+        reference_externe=rangee["reference_externe"],
+        statut=rangee["statut"],
+        lignes=[Ligne(**ligne) for ligne in lignes],
+        historique=[Evenement(**evenement) for evenement in evenements],
     )
+
+
+def trouver_commande(connexion: sqlite3.Connection, commande_id: int) -> Commande:
+    rangee = connexion.execute(
+        "SELECT * FROM commandes WHERE id = ?",
+        (commande_id,),
+    ).fetchone()
+    if rangee is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Commande introuvable : {commande_id}",
+        )
+    return charger_commande(connexion, rangee)
 
 
 @routeur.post("/commandes")
 def creer_commande(commande: NouvelleCommande) -> Commande:
-    nouvelle = Commande(
-        id=len(commandes) + 1,
-        client=commande.client,
-        lignes=rapprocher_lignes(commande.lignes),
-        source=commande.source,
-        reference_externe=commande.reference_externe,
-        statut=Statut.RECUE,
-        historique=[],
-    )
-    changer_statut(nouvelle, Statut.RECUE, commande.client, f"Reçue ({commande.source})")
-    commandes.append(nouvelle)
-    return nouvelle
+    lignes = rapprocher_lignes(commande.lignes)
+    with ouvrir() as connexion:
+        curseur = connexion.execute(
+            "INSERT INTO commandes (client, source, reference_externe, statut) VALUES (?, ?, ?, ?)",
+            (commande.client, commande.source, commande.reference_externe, Statut.RECUE),
+        )
+        commande_id = curseur.lastrowid
+        enregistrer_lignes(connexion, commande_id, lignes)
+        changer_statut(connexion, commande_id, Statut.RECUE, commande.client, f"Reçue ({commande.source})")
+        return trouver_commande(connexion, commande_id)
 
 
 @routeur.post("/commandes/analyser")
@@ -239,40 +275,50 @@ def analyser_message(message: Message) -> Lecture:
 
 @routeur.get("/commandes")
 def lister_commandes() -> list[Commande]:
-    return commandes
+    with ouvrir() as connexion:
+        rangees = connexion.execute("SELECT * FROM commandes ORDER BY id").fetchall()
+        return [charger_commande(connexion, rangee) for rangee in rangees]
 
 
 @routeur.get("/commandes/{commande_id}")
 def lire_commande(commande_id: int) -> Commande:
-    return trouver_commande(commande_id)
+    with ouvrir() as connexion:
+        return trouver_commande(connexion, commande_id)
 
 
 @routeur.post("/commandes/{commande_id}/valider")
 def valider_commande(commande_id: int, validation: Validation) -> Commande:
-    commande = trouver_commande(commande_id)
-    if commande.statut not in (Statut.RECUE, Statut.A_VERIFIER):
-        raise HTTPException(
-            status_code=409,
-            detail=f"Impossible de valider : la commande est déjà « {commande.statut} »",
-        )
-    if validation.lignes is None:
-        changer_statut(commande, Statut.VALIDEE, validation.par, "Validée telle quelle")
-    else:
-        avant = decrire(commande.lignes)
-        commande.lignes = rapprocher_lignes(validation.lignes)
-        changer_statut(
-            commande, Statut.VALIDEE, validation.par, f"Corrigée et validée. Avant : {avant}"
-        )
-    return commande
+    with ouvrir() as connexion:
+        commande = trouver_commande(connexion, commande_id)
+        if commande.statut not in (Statut.RECUE, Statut.A_VERIFIER):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Impossible de valider : la commande est déjà « {commande.statut} »",
+            )
+        if validation.lignes is None:
+            changer_statut(connexion, commande_id, Statut.VALIDEE, validation.par, "Validée telle quelle")
+        else:
+            nouvelles = rapprocher_lignes(validation.lignes)
+            connexion.execute("DELETE FROM lignes WHERE commande_id = ?", (commande_id,))
+            enregistrer_lignes(connexion, commande_id, nouvelles)
+            changer_statut(
+                connexion,
+                commande_id,
+                Statut.VALIDEE,
+                validation.par,
+                f"Corrigée et validée. Avant : {decrire(commande.lignes)}",
+            )
+        return trouver_commande(connexion, commande_id)
 
 
 @routeur.post("/commandes/{commande_id}/envoyer")
 def envoyer_a_l_entrepot(commande_id: int, action: Action) -> Commande:
-    commande = trouver_commande(commande_id)
-    if commande.statut != Statut.VALIDEE:
-        raise HTTPException(
-            status_code=409,
-            detail="Une commande doit être validée avant l'envoi à l'entrepôt",
-        )
-    changer_statut(commande, Statut.ENVOYEE_ENTREPOT, action.par, "Envoyée à l'entrepôt")
-    return commande
+    with ouvrir() as connexion:
+        commande = trouver_commande(connexion, commande_id)
+        if commande.statut != Statut.VALIDEE:
+            raise HTTPException(
+                status_code=409,
+                detail="Une commande doit être validée avant l'envoi à l'entrepôt",
+            )
+        changer_statut(connexion, commande_id, Statut.ENVOYEE_ENTREPOT, action.par, "Envoyée à l'entrepôt")
+        return trouver_commande(connexion, commande_id)

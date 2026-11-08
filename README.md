@@ -88,6 +88,7 @@ La lecture se fait par règles pour l'instant. Un modèle d'IA pourra la remplac
 ## Pile technique
 
 - **Backend :** Python 3.13, FastAPI, Pydantic
+- **Données :** SQLite
 - **Tournées :** OSRM, OR-Tools, scikit-learn, Open-Meteo
 - **Intégration :** module Odoo (Python)
 - **Frontend :** React (Vite) et MapLibre
