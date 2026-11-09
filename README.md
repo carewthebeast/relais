@@ -121,6 +121,44 @@ Pour lancer les tests automatiques, depuis le dossier `backend/` :
 pytest
 ```
 
+### Routes réelles avec OSRM
+
+Relais calcule les km et les temps de conduite sur les vraies routes avec [OSRM](https://project-osrm.org/), à partir de la carte libre [OpenStreetMap](https://www.openstreetmap.org/). OSRM tourne dans Docker. Il faut [Docker Desktop](https://www.docker.com/products/docker-desktop/) et [Homebrew](https://brew.sh/).
+
+La carte se prépare une seule fois, dans un dossier hors du projet :
+
+```bash
+# 1. Télécharger la carte du Québec (environ 1,1 Go)
+mkdir -p ~/osrm && cd ~/osrm
+curl -L -O https://download.geofabrik.de/north-america/canada/quebec-latest.osm.pbf
+
+# 2. Garder seulement la région desservie (environ 40 Mo)
+brew install osmium-tool
+osmium extract -b -73.4,44.95,-71.6,45.85 quebec-latest.osm.pbf -o region-granby.osm.pbf
+
+# 3. Préparer la carte : routes pour véhicules, puis découpage en zones (algorithme MLD)
+docker run --rm -t -v "${PWD}:/data" ghcr.io/project-osrm/osrm-backend:v6.0.0 osrm-extract -p /opt/car.lua /data/region-granby.osm.pbf
+docker run --rm -t -v "${PWD}:/data" ghcr.io/project-osrm/osrm-backend:v6.0.0 osrm-partition /data/region-granby.osrm
+docker run --rm -t -v "${PWD}:/data" ghcr.io/project-osrm/osrm-backend:v6.0.0 osrm-customize /data/region-granby.osrm
+```
+
+Ensuite, pour lancer OSRM sur le port 5001 (sur Mac, le port 5000 est pris par AirPlay) :
+
+```bash
+cd ~/osrm
+docker run --rm -t -i -p 5001:5000 -v "${PWD}:/data" --name osrm ghcr.io/project-osrm/osrm-backend:v6.0.0 osrm-routed --algorithm mld /data/region-granby.osrm
+```
+
+Pour vérifier, de l'entrepôt fictif de Granby jusqu'à Sherbrooke (longitude d'abord, puis latitude) :
+
+```bash
+curl "http://127.0.0.1:5001/route/v1/driving/-72.7600,45.3870;-71.8920,45.4030?overview=false"
+```
+
+La réponse donne environ 79 km (`distance`, en mètres) et 73 minutes (`duration`, en secondes).
+
+Pour couvrir tout le Québec, on prépare le fichier complet (`quebec-latest`) au lieu du fichier découpé, sur une machine avec plus de mémoire. Le code de Relais ne change pas.
+
 ## Données fictives
 
 Toutes les données sont fictives et identifiées comme telles : distributeur, clients, adresses, employés et procédures. Aucune donnée personnelle réelle n'est utilisée (Loi 25). Le modèle de prédiction des temps sera entraîné sur des trajets simulés.

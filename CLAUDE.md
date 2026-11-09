@@ -26,12 +26,13 @@ Relais ne remplace pas l'ERP ou le CRM du client : il travaille à côté, reli�
 - **Backend :** Python 3.13, FastAPI, Pydantic — dossier `backend/`, point d'entrée `backend/main.py`, environnement virtuel `backend/.venv`
 - **Tests :** pytest — dossier `backend/tests/`
 - **Données :** SQLite, dans le fichier `backend/relais.db` (jamais commité). Les tests utilisent une base temporaire.
-- **Tournées :** OSRM pour les routes réelles (installé en local), OR-Tools pour l'optimisation, scikit-learn pour la prédiction des temps, Open-Meteo pour la météo
+- **Tournées :** OSRM pour les routes réelles (dans Docker, sur le port 5001 parce que macOS prend le 5000 pour AirPlay ; carte de la région découpée dans `~/osrm`, hors du dépôt), OR-Tools pour l'optimisation, scikit-learn pour la prédiction des temps, Open-Meteo pour la météo
 - **Plugin :** module Odoo (Python), version Community installée en local
 - **Frontend :** React (Vite) et MapLibre pour la carte — dossier `frontend/`
 - Installer les dépendances : `cd backend && source .venv/bin/activate && pip install -r requirements.txt`. Chaque nouveau paquet est ajouté à `requirements.txt` avec sa version.
 - Lancer l'API : `cd backend && source .venv/bin/activate && fastapi dev main.py` puis http://127.0.0.1:8000/docs
 - Lancer les tests : `cd backend && source .venv/bin/activate && pytest`
+- Lancer OSRM : `cd ~/osrm && docker run --rm -t -i -p 5001:5000 -v "${PWD}:/data" --name osrm ghcr.io/project-osrm/osrm-backend:v6.0.0 osrm-routed --algorithm mld /data/region-granby.osrm` (préparation de la carte : voir le README)
 
 ## Organisation du backend
 
