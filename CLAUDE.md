@@ -45,6 +45,8 @@ backend/
   catalogue.py    produits et leur compartiment (congelé, réfrigéré, sec)
   clients.py      clients fictifs et entrepôt : position et plage de livraison
   texte.py        nettoyage du texte (espaces, majuscules, accents), partagé
+  trajets.py      demande à OSRM les km et les minutes entre les lieux (matrice)
+  reglages.py     réglages lus dans .env (adresse d'OSRM, plus tard la clé d'API) ; modèle dans .env.example
   donnees/        données fictives en JSON : catalogue, clients, entrepôt, procédures
   tests/          tests automatiques
 ```

@@ -73,6 +73,7 @@ flowchart LR
 | GET | `/clients` | Liste les clients, avec leur position et leur plage de livraison |
 | GET | `/clients/{client_id}` | Lit un client |
 | GET | `/entrepot` | Donne la position de l'entrepôt |
+| GET | `/trajets/depuis-entrepot` | Km et minutes de conduite réels de l'entrepôt à chaque client, du plus proche au plus loin (OSRM) |
 
 Les messages d'erreur sont en français. Les commandes sont enregistrées dans une base SQLite.
 
@@ -110,6 +111,7 @@ cd relais/backend
 python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env
 fastapi dev main.py
 ```
 
