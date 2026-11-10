@@ -107,6 +107,64 @@ def lire_itineraire(modele, gestionnaire, solution, temps, camion: Camion, numer
     )
 
 
+def rentre(livraison: Livraison, reste: dict[Compartiment, int]) -> bool:
+    for compartiment, caisses in livraison.caisses.items():
+        if caisses > reste[compartiment]:
+            return False
+    return True
+
+
+def repartir_dans_l_ordre(livraisons: list[Livraison], camions: list[Camion]) -> tuple[list[list[int]], list[int]]:
+    """Comme sans Relais : on remplit le premier camion dans l'ordre des appels, puis le suivant."""
+    tournees = [[] for camion in camions]
+    restes = [dict(camion.capacites) for camion in camions]
+    oubliees = []
+    numero = 0
+    for position, livraison in enumerate(livraisons, start=1):
+        while numero < len(camions) and not rentre(livraison, restes[numero]):
+            numero += 1
+        if numero == len(camions):
+            oubliees.append(livraison.commande_id)
+            continue
+        tournees[numero].append(position)
+        for compartiment, caisses in livraison.caisses.items():
+            restes[numero][compartiment] -= caisses
+    return tournees, oubliees
+
+
+def rouler(camion: Camion, positions: list[int], livraisons: list[Livraison], metres, secondes) -> Itineraire:
+    """Calcule les arrivées d'un camion qui suit les arrêts dans l'ordre donné. S'il arrive avant la plage,
+    il attend ; s'il arrive après, il livre quand même, en retard."""
+    moment = debut_journee
+    distance = 0
+    lieu = 0
+    arrivees = []
+    for position in positions:
+        moment += secondes[lieu][position]
+        distance += metres[lieu][position]
+        moment = max(moment, livraisons[position - 1].debut)
+        arrivees.append(moment)
+        moment += secondes_par_arret
+        lieu = position
+    return Itineraire(
+        camion=camion.nom,
+        commandes=[livraisons[position - 1].commande_id for position in positions],
+        arrivees=arrivees,
+        depart=debut_journee,
+        retour=moment + secondes[lieu][0],
+        metres=distance + metres[lieu][0],
+    )
+
+
+def suivre_l_ordre_des_appels(livraisons: list[Livraison], camions: list[Camion], metres, secondes) -> Plan:
+    tournees, oubliees = repartir_dans_l_ordre(livraisons, camions)
+    itineraires = []
+    for camion, positions in zip(camions, tournees):
+        if positions:
+            itineraires.append(rouler(camion, positions, livraisons, metres, secondes))
+    return Plan(itineraires=itineraires, oubliees=oubliees)
+
+
 def optimiser(
     livraisons: list[Livraison],
     camions: list[Camion],

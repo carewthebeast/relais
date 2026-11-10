@@ -9,7 +9,7 @@ from base_de_donnees import ouvrir
 from catalogue import Compartiment, trouver_produit
 from clients import Client, entrepot, trouver_client
 from commandes import Commande, Statut, charger_commande
-from optimisation import Camion, Itineraire, Livraison, optimiser
+from optimisation import Camion, Itineraire, Livraison, Plan, optimiser, suivre_l_ordre_des_appels
 from reglages import reglages
 from trajets import demander_matrice
 
@@ -25,7 +25,15 @@ class ArretPrevu(BaseModel):
     client: str
     ville: str
     arrivee: str
+    dans_la_plage: bool
     urgente: bool
+
+
+class ACharger(BaseModel):
+    arret: int
+    client: str
+    produit: str
+    quantite: int
 
 
 class TourneeCamion(BaseModel):
@@ -33,8 +41,10 @@ class TourneeCamion(BaseModel):
     depart: str
     retour: str
     km: float
+    minutes: int
     caisses: dict[Compartiment, int]
     arrets: list[ArretPrevu]
+    chargement: dict[Compartiment, list[ACharger]]
 
 
 class CommandeNonPlacee(BaseModel):
@@ -42,10 +52,19 @@ class CommandeNonPlacee(BaseModel):
     client: str
 
 
-class TourneeDuJour(BaseModel):
-    camions: list[TourneeCamion]
+class Version(BaseModel):
     km_total: float
+    minutes_total: int
+    hors_plage: int
+    camions: list[TourneeCamion]
     non_placees: list[CommandeNonPlacee]
+
+
+class TourneeDuJour(BaseModel):
+    km_economises: float
+    minutes_economisees: int
+    recue: Version
+    optimisee: Version
 
 
 def heure(secondes: int) -> str:
@@ -83,45 +102,80 @@ def preparer_livraison(commande: Commande, client: Client) -> Livraison:
     )
 
 
+def ordre_de_chargement(arrets: list[ArretPrevu], commandes: dict[int, Commande]) -> dict[Compartiment, list[ACharger]]:
+    """Le dernier arrêt se charge en premier, au fond du camion : le premier livré reste près de la porte."""
+    chargement = {compartiment: [] for compartiment in Compartiment}
+    for arret in reversed(arrets):
+        for ligne in commandes[arret.commande_id].lignes:
+            compartiment = trouver_produit(ligne.produit).compartiment
+            chargement[compartiment].append(
+                ACharger(arret=arret.position, client=arret.client, produit=ligne.produit, quantite=ligne.quantite)
+            )
+    return chargement
+
+
+def presenter_arret(position: int, commande: Commande, arrivee: int) -> ArretPrevu:
+    client = trouver_client(commande.client)
+    return ArretPrevu(
+        position=position,
+        commande_id=commande.id,
+        client=commande.client,
+        ville=client.ville,
+        arrivee=heure(arrivee),
+        dans_la_plage=en_secondes(client.livraison_debut) <= arrivee <= en_secondes(client.livraison_fin),
+        urgente=commande.urgente,
+    )
+
+
 def presenter_camion(itineraire: Itineraire, commandes: dict[int, Commande]) -> TourneeCamion:
     arrets = []
     for position, (commande_id, arrivee) in enumerate(zip(itineraire.commandes, itineraire.arrivees), start=1):
-        commande = commandes[commande_id]
-        arrets.append(
-            ArretPrevu(
-                position=position,
-                commande_id=commande_id,
-                client=commande.client,
-                ville=trouver_client(commande.client).ville,
-                arrivee=heure(arrivee),
-                urgente=commande.urgente,
-            )
-        )
+        arrets.append(presenter_arret(position, commandes[commande_id], arrivee))
     return TourneeCamion(
         camion=itineraire.camion,
         depart=heure(itineraire.depart),
         retour=heure(itineraire.retour),
         km=round(itineraire.metres / 1000, 1),
+        minutes=round((itineraire.retour - itineraire.depart) / 60),
         caisses=compter_caisses([commandes[numero] for numero in itineraire.commandes]),
         arrets=arrets,
+        chargement=ordre_de_chargement(arrets, commandes),
+    )
+
+
+def presenter_version(plan: Plan, commandes: dict[int, Commande]) -> Version:
+    tournees = [presenter_camion(itineraire, commandes) for itineraire in plan.itineraires]
+    hors_plage = 0
+    for tournee in tournees:
+        for arret in tournee.arrets:
+            if not arret.dans_la_plage:
+                hors_plage += 1
+    return Version(
+        km_total=round(sum(tournee.km for tournee in tournees), 1),
+        minutes_total=sum(tournee.minutes for tournee in tournees),
+        hors_plage=hors_plage,
+        camions=tournees,
+        non_placees=[CommandeNonPlacee(commande_id=numero, client=commandes[numero].client) for numero in plan.oubliees],
     )
 
 
 @routeur.get("/tournees/du-jour")
 def tournee_du_jour() -> TourneeDuJour:
     a_livrer = commandes_a_livrer()
-    if not a_livrer:
-        return TourneeDuJour(camions=[], km_total=0, non_placees=[])
-    clients_du_jour = [trouver_client(commande.client) for commande in a_livrer]
-    matrice = demander_matrice([entrepot, *clients_du_jour])
-    livraisons = [preparer_livraison(commande, client) for commande, client in zip(a_livrer, clients_du_jour)]
-    plan = optimiser(livraisons, camions, matrice.metres, matrice.secondes, reglages.millisecondes_optimisation)
     commandes = {commande.id: commande for commande in a_livrer}
-    tournees = [presenter_camion(itineraire, commandes) for itineraire in plan.itineraires]
+    if a_livrer:
+        clients_du_jour = [trouver_client(commande.client) for commande in a_livrer]
+        matrice = demander_matrice([entrepot, *clients_du_jour])
+        livraisons = [preparer_livraison(commande, client) for commande, client in zip(a_livrer, clients_du_jour)]
+        plan_recu = suivre_l_ordre_des_appels(livraisons, camions, matrice.metres, matrice.secondes)
+        plan_optimise = optimiser(livraisons, camions, matrice.metres, matrice.secondes, reglages.millisecondes_optimisation)
+    else:
+        plan_recu = plan_optimise = Plan(itineraires=[], oubliees=[])
+    recue = presenter_version(plan_recu, commandes)
+    optimisee = presenter_version(plan_optimise, commandes)
     return TourneeDuJour(
-        camions=tournees,
-        km_total=round(sum(tournee.km for tournee in tournees), 1),
-        non_placees=[
-            CommandeNonPlacee(commande_id=numero, client=commandes[numero].client) for numero in plan.oubliees
-        ],
+        km_economises=round(recue.km_total - optimisee.km_total, 1),
+        minutes_economisees=recue.minutes_total - optimisee.minutes_total,
+        recue=recue,
+        optimisee=optimisee,
     )

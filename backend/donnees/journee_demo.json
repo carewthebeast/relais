@@ -1,16 +1,16 @@
 [
-  {"client": "Restaurant Le Tournesol (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 4}, {"produit": "Poulet entier congelé", "quantite": 3}, {"produit": "Lait 2 %", "quantite": 4}]},
-  {"client": "École primaire des Érables (fictif)", "lignes": [{"produit": "Lait 2 %", "quantite": 8}, {"produit": "Pommes McIntosh", "quantite": 6}, {"produit": "Pain blanc tranché", "quantite": 5}]},
-  {"client": "Boulangerie du Lac (fictif)", "urgente": true, "lignes": [{"produit": "Farine tout usage", "quantite": 10}, {"produit": "Beurre salé", "quantite": 6}, {"produit": "Œufs gros calibre", "quantite": 4}]},
-  {"client": "Auberge des Collines (fictif)", "lignes": [{"produit": "Poulet entier congelé", "quantite": 3}, {"produit": "Fromage cheddar", "quantite": 4}, {"produit": "Sirop d'érable", "quantite": 3}]},
-  {"client": "Résidence Les Tilleuls (fictif)", "lignes": [{"produit": "Lait 2 %", "quantite": 6}, {"produit": "Œufs gros calibre", "quantite": 5}, {"produit": "Pain blanc tranché", "quantite": 4}]},
-  {"client": "Marché Lafleur (fictif)", "lignes": [{"produit": "Pommes McIntosh", "quantite": 5}, {"produit": "Fromage cheddar", "quantite": 3}, {"produit": "Farine tout usage", "quantite": 4}]},
-  {"client": "Cafétéria Collège Horizon (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 5}, {"produit": "Poulet entier congelé", "quantite": 4}, {"produit": "Lait 2 %", "quantite": 5}]},
-  {"client": "Restaurant La Cour (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 3}, {"produit": "Beurre salé", "quantite": 2}, {"produit": "Sirop d'érable", "quantite": 2}]},
   {"client": "Bistro du Quai (fictif)", "urgente": true, "lignes": [{"produit": "Poulet entier congelé", "quantite": 2}, {"produit": "Fromage cheddar", "quantite": 3}, {"produit": "Pain blanc tranché", "quantite": 3}]},
-  {"client": "CPE Les Pommiers (fictif)", "lignes": [{"produit": "Lait 2 %", "quantite": 6}, {"produit": "Pommes McIntosh", "quantite": 4}, {"produit": "Pain blanc tranché", "quantite": 4}]},
+  {"client": "Restaurant Le Tournesol (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 4}, {"produit": "Poulet entier congelé", "quantite": 3}, {"produit": "Lait 2 %", "quantite": 4}]},
+  {"client": "Cafétéria Collège Horizon (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 5}, {"produit": "Poulet entier congelé", "quantite": 4}, {"produit": "Lait 2 %", "quantite": 5}]},
+  {"client": "Résidence Les Tilleuls (fictif)", "lignes": [{"produit": "Lait 2 %", "quantite": 6}, {"produit": "Œufs gros calibre", "quantite": 5}, {"produit": "Pain blanc tranché", "quantite": 4}]},
   {"client": "Restaurant Le Carrefour (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 4}, {"produit": "Poulet entier congelé", "quantite": 3}, {"produit": "Beurre salé", "quantite": 2}]},
-  {"client": "Café-bistro La Halte (fictif)", "lignes": [{"produit": "Œufs gros calibre", "quantite": 3}, {"produit": "Farine tout usage", "quantite": 3}, {"produit": "Sirop d'érable", "quantite": 2}]},
+  {"client": "Boulangerie du Lac (fictif)", "urgente": true, "lignes": [{"produit": "Farine tout usage", "quantite": 10}, {"produit": "Beurre salé", "quantite": 6}, {"produit": "Œufs gros calibre", "quantite": 4}]},
+  {"client": "Restaurant L'Étape (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 2}, {"produit": "Fromage cheddar", "quantite": 2}, {"produit": "Lait 2 %", "quantite": 3}]},
+  {"client": "École primaire des Érables (fictif)", "lignes": [{"produit": "Lait 2 %", "quantite": 8}, {"produit": "Pommes McIntosh", "quantite": 6}, {"produit": "Pain blanc tranché", "quantite": 5}]},
   {"client": "Cantine des Pistes (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 3}, {"produit": "Poulet entier congelé", "quantite": 2}, {"produit": "Pain blanc tranché", "quantite": 2}]},
-  {"client": "Restaurant L'Étape (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 2}, {"produit": "Fromage cheddar", "quantite": 2}, {"produit": "Lait 2 %", "quantite": 3}]}
+  {"client": "Restaurant La Cour (fictif)", "lignes": [{"produit": "Frites congelées", "quantite": 3}, {"produit": "Beurre salé", "quantite": 2}, {"produit": "Sirop d'érable", "quantite": 2}]},
+  {"client": "Auberge des Collines (fictif)", "lignes": [{"produit": "Poulet entier congelé", "quantite": 3}, {"produit": "Fromage cheddar", "quantite": 4}, {"produit": "Sirop d'érable", "quantite": 3}]},
+  {"client": "CPE Les Pommiers (fictif)", "lignes": [{"produit": "Lait 2 %", "quantite": 6}, {"produit": "Pommes McIntosh", "quantite": 4}, {"produit": "Pain blanc tranché", "quantite": 4}]},
+  {"client": "Marché Lafleur (fictif)", "lignes": [{"produit": "Pommes McIntosh", "quantite": 5}, {"produit": "Fromage cheddar", "quantite": 3}, {"produit": "Farine tout usage", "quantite": 4}]},
+  {"client": "Café-bistro La Halte (fictif)", "lignes": [{"produit": "Œufs gros calibre", "quantite": 3}, {"produit": "Farine tout usage", "quantite": 3}, {"produit": "Sirop d'érable", "quantite": 2}]}
 ]

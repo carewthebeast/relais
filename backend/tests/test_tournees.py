@@ -14,38 +14,76 @@ def tournee() -> dict:
     return reponse.json()
 
 
+def arrets(version: dict) -> list[dict]:
+    tous = []
+    for camion in version["camions"]:
+        tous += camion["arrets"]
+    return tous
+
+
 def test_heure_lisible():
     assert heure(8 * 3600 + 5 * 60) == "08:05"
 
 
 def test_rien_a_livrer():
-    assert tournee() == {"camions": [], "km_total": 0, "non_placees": []}
+    resultat = tournee()
+    assert resultat["km_economises"] == 0
+    assert resultat["recue"]["camions"] == []
+    assert resultat["optimisee"]["camions"] == []
 
 
 def test_chaque_commande_placee_ou_signalee(faux_osrm):
     numeros = creer_journee()
-    resultat = tournee()
-    placees = [arret["commande_id"] for camion in resultat["camions"] for arret in camion["arrets"]]
-    non_placees = [commande["commande_id"] for commande in resultat["non_placees"]]
+    optimisee = tournee()["optimisee"]
+    placees = [arret["commande_id"] for arret in arrets(optimisee)]
+    non_placees = [commande["commande_id"] for commande in optimisee["non_placees"]]
     assert sorted(placees + non_placees) == sorted(numeros)
 
 
 def test_aucun_compartiment_ne_deborde(faux_osrm):
     creer_journee()
-    for camion in tournee()["camions"]:
-        capacites = next(modele.capacites for modele in camions if modele.nom == camion["camion"])
+    capacites = {camion.nom: camion.capacites for camion in camions}
+    for camion in tournee()["optimisee"]["camions"]:
         for compartiment, caisses in camion["caisses"].items():
-            assert caisses <= capacites[compartiment]
+            assert caisses <= capacites[camion["camion"]][compartiment]
 
 
 def test_arrivees_dans_les_plages_de_livraison(faux_osrm):
     creer_journee()
-    for camion in tournee()["camions"]:
-        for arret in camion["arrets"]:
-            client = trouver_client(arret["client"])
-            assert client.livraison_debut.strftime("%H:%M") <= arret["arrivee"] <= client.livraison_fin.strftime("%H:%M")
+    for arret in arrets(tournee()["optimisee"]):
+        client = trouver_client(arret["client"])
+        assert client.livraison_debut.strftime("%H:%M") <= arret["arrivee"] <= client.livraison_fin.strftime("%H:%M")
+        assert arret["dans_la_plage"]
+
+
+def test_tournee_recue_suit_l_ordre_des_appels(faux_osrm):
+    numeros = creer_journee()
+    recue = tournee()["recue"]
+    assert [arret["commande_id"] for arret in arrets(recue)] == numeros
+
+
+def test_economies_avant_apres(faux_osrm):
+    creer_journee()
+    resultat = tournee()
+    assert resultat["km_economises"] == round(resultat["recue"]["km_total"] - resultat["optimisee"]["km_total"], 1)
+    assert resultat["optimisee"]["hors_plage"] == 0
+
+
+def test_chargement_dernier_arret_au_fond(faux_osrm):
+    creer_journee()
+    for camion in tournee()["optimisee"]["camions"]:
+        for zone in camion["chargement"].values():
+            numeros_d_arret = [a_charger["arret"] for a_charger in zone]
+            assert numeros_d_arret == sorted(numeros_d_arret, reverse=True)
+
+
+def test_chargement_contient_toute_la_marchandise(faux_osrm):
+    creer_journee()
+    for camion in tournee()["optimisee"]["camions"]:
+        total = sum(a_charger["quantite"] for zone in camion["chargement"].values() for a_charger in zone)
+        assert total == sum(camion["caisses"].values())
 
 
 def test_ignore_les_commandes_pas_encore_envoyees(faux_osrm):
     api.post("/commandes", json={"client": "Marché Lafleur (fictif)", "lignes": [{"produit": "Beurre salé", "quantite": 2}]})
-    assert tournee()["camions"] == []
+    assert tournee()["optimisee"]["camions"] == []

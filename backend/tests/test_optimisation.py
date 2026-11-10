@@ -1,6 +1,6 @@
 import pytest
 
-from optimisation import Camion, Livraison, optimiser
+from optimisation import Camion, Livraison, optimiser, suivre_l_ordre_des_appels
 
 grand_camion = Camion(nom="Camion test", capacites={"congele": 50, "refrigere": 50, "sec": 50})
 
@@ -97,3 +97,25 @@ def test_refuse_une_matrice_de_la_mauvaise_taille():
     metres, secondes = carte(3)
     with pytest.raises(ValueError):
         optimiser([livraison(1)], [grand_camion], metres, secondes)
+
+
+def test_sans_relais_on_remplit_un_camion_puis_le_suivant():
+    petits = [
+        Camion(nom="Camion A", capacites={"congele": 5, "refrigere": 50, "sec": 50}),
+        Camion(nom="Camion B", capacites={"congele": 5, "refrigere": 50, "sec": 50}),
+    ]
+    metres, secondes = carte(3)
+    plan = suivre_l_ordre_des_appels(
+        [livraison(1, congele=3), livraison(2, congele=2), livraison(3, congele=4)], petits, metres, secondes
+    )
+    assert [itineraire.commandes for itineraire in plan.itineraires] == [[1, 2], [3]]
+
+
+def test_sans_relais_le_camion_attend_ou_arrive_en_retard():
+    metres, secondes = carte(2)
+    plan = suivre_l_ordre_des_appels(
+        [livraison(1, debut="09:00", fin="10:00"), livraison(2, debut="06:00", fin="06:30")], [grand_camion], metres, secondes
+    )
+    arrivees = plan.itineraires[0].arrivees
+    assert arrivees[0] == en_secondes("09:00")
+    assert arrivees[1] == en_secondes("09:00") + 15 * 60 + 60

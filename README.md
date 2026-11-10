@@ -2,7 +2,7 @@
 
 Application d'opérations pour la distribution alimentaire. Relais relaie chaque commande du client à l'entrepôt, puis au camion, sans rien perdre en chemin. Elle donne aussi au coordonnateur TI un seul endroit pour gérer le budget, les projets et l'équipement.
 
-**Statut :** en développement. La phase 1 (Commandes) est terminée ; la phase 2 (Tournées) est en cours.
+**Statut :** en développement. Les phases 1 (Commandes) et 2 (Tournées) sont terminées ; la phase 3 (Prédiction des temps) est la prochaine.
 
 ## Le problème
 
@@ -42,8 +42,8 @@ flowchart LR
 | Phase | Contenu | Statut |
 |---|---|---|
 | 1 | Commandes : lecture des messages, validation humaine, statuts | Terminée |
-| 2 | Tournées : routes réelles, optimisation, km avant et après | En cours |
-| 3 | Prédiction des temps : modèle d'apprentissage automatique et météo | À venir |
+| 2 | Tournées : routes réelles, optimisation, km avant et après | Terminée |
+| 3 | Prédiction des temps : modèle d'apprentissage automatique et météo | Prochaine |
 | 4 | Procédures, Équipe, Projets et parc | À venir |
 | 5 | Intégration : plugin Odoo et schéma de branchement | À venir |
 | 6 | Interface React : carte, tournées animées, tableau de bord | À venir |
@@ -74,9 +74,21 @@ flowchart LR
 | GET | `/clients/{client_id}` | Lit un client |
 | GET | `/entrepot` | Donne la position de l'entrepôt |
 | GET | `/trajets/depuis-entrepot` | Km et minutes de conduite réels de l'entrepôt à chaque client, du plus proche au plus loin (OSRM) |
-| GET | `/tournees/du-jour` | Répartit les commandes envoyées à l'entrepôt entre les camions et choisit l'ordre des arrêts (OR-Tools) : compartiments congelé, réfrigéré et sec, plages de livraison, urgences en premier. Une commande qui ne rentre pas est signalée, jamais oubliée |
+| GET | `/tournees/du-jour` | Répartit les commandes envoyées à l'entrepôt entre les camions et choisit l'ordre des arrêts (OR-Tools) : compartiments congelé, réfrigéré et sec, plages de livraison, urgences en premier. Compare avec la tournée reçue (ordre des appels) : km, temps et livraisons hors plage. Donne à l'entrepôt l'ordre de chargement de chaque zone, le dernier arrêt au fond. Une commande qui ne rentre pas est signalée, jamais oubliée |
 
 Pour essayer avec une journée fictive de 14 commandes (depuis `backend/`, OSRM lancé) : `python demo.py`, puis `GET /tournees/du-jour`.
+
+### Exemple : la journée de démonstration
+
+14 commandes, 3 camions, routes réelles (OSRM) :
+
+| | Tournée reçue (ordre des appels) | Tournée optimisée (Relais) |
+|---|---|---|
+| Distance | 843 km | 380 km |
+| Temps de camion | 25 h 30 | 12 h 38 |
+| Livraisons hors plage | 6 | 0 |
+
+La tournée reçue suit l'ordre des appels, comme décrit dans « Le problème ». Un répartiteur d'expérience ferait mieux que cet ordre : l'écart réel avec son travail serait plus petit.
 
 Les messages d'erreur sont en français. Les commandes sont enregistrées dans une base SQLite.
 
