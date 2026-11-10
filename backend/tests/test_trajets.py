@@ -4,28 +4,11 @@ from fastapi.testclient import TestClient
 
 import trajets
 from clients import clients, entrepot
+from conftest import repondre_comme_osrm
 from main import app
 from reglages import reglages
 
 api = TestClient(app)
-
-
-def faux_tableau(nombre: int, par_pas: int) -> list[list[int]]:
-    return [[abs(depart - arrivee) * par_pas for arrivee in range(nombre)] for depart in range(nombre)]
-
-
-def repondre_comme_osrm(chemin: str) -> dict:
-    nombre = chemin.split("?")[0].count(";") + 1
-    return {
-        "code": "Ok",
-        "distances": faux_tableau(nombre, 10_000),
-        "durations": faux_tableau(nombre, 600),
-    }
-
-
-@pytest.fixture
-def faux_osrm(monkeypatch):
-    monkeypatch.setattr(trajets, "appeler_osrm", repondre_comme_osrm)
 
 
 def test_longitude_avant_latitude():

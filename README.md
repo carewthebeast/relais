@@ -74,6 +74,9 @@ flowchart LR
 | GET | `/clients/{client_id}` | Lit un client |
 | GET | `/entrepot` | Donne la position de l'entrepôt |
 | GET | `/trajets/depuis-entrepot` | Km et minutes de conduite réels de l'entrepôt à chaque client, du plus proche au plus loin (OSRM) |
+| GET | `/tournees/du-jour` | Répartit les commandes envoyées à l'entrepôt entre les camions et choisit l'ordre des arrêts (OR-Tools) : compartiments congelé, réfrigéré et sec, plages de livraison, urgences en premier. Une commande qui ne rentre pas est signalée, jamais oubliée |
+
+Pour essayer avec une journée fictive de 14 commandes (depuis `backend/`, OSRM lancé) : `python demo.py`, puis `GET /tournees/du-jour`.
 
 Les messages d'erreur sont en français. Les commandes sont enregistrées dans une base SQLite.
 

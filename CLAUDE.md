@@ -47,6 +47,9 @@ backend/
   texte.py        nettoyage du texte (espaces, majuscules, accents), partagé
   trajets.py      demande à OSRM les km et les minutes entre les lieux (matrice)
   reglages.py     réglages lus dans .env (adresse d'OSRM, plus tard la clé d'API) ; modèle dans .env.example
+  optimisation.py OR-Tools : répartit les livraisons entre les camions et choisit l'ordre (compartiments, plages, urgences)
+  tournees.py     route de la tournée du jour, à partir des commandes envoyées à l'entrepôt ; flotte dans donnees/camions.json
+  demo.py         crée une journée de livraisons fictive (python demo.py), à partir de donnees/journee_demo.json
   donnees/        données fictives en JSON : catalogue, clients, entrepôt, procédures
   tests/          tests automatiques
 ```

@@ -1,0 +1,5 @@
+[
+  {"nom": "Camion 1 (fictif)", "capacites": {"congele": 20, "refrigere": 40, "sec": 40}},
+  {"nom": "Camion 2 (fictif)", "capacites": {"congele": 20, "refrigere": 40, "sec": 40}},
+  {"nom": "Camion 3 (fictif)", "capacites": {"congele": 20, "refrigere": 40, "sec": 40}}
+]
